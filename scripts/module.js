@@ -63,7 +63,22 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
 async function respondTo(question, users) {
 	console.debug(`${moduleName} | respondTo(question = "${question}", users =`, users, ')');
 	try {
-		const reply = await getGptReplyAsHtml(question);
+		// Check if user configured an Assistant ID
+		const assistantId = game.settings.get(moduleName, 'assistantId');
+		const apiKey = game.settings.get(moduleName, 'apiKey');
+		
+		let reply;
+
+		if (assistantId && assistantId.trim()) {
+			// Use Assistant API
+			console.debug(`${moduleName} | Using Assistant API with ID: ${assistantId}`);
+			const { getAssistantReplyAsHtml } = await import('./assistant-api.js');
+			reply = await getAssistantReplyAsHtml(question, assistantId, apiKey);
+		} else {
+			// Use Chat Completions API (default)
+			console.debug(`${moduleName} | Using Chat Completions API`);
+			reply = await getGptReplyAsHtml(question);
+		}
 
 		const abbr = "By ChatGPT. Statements may be false";
 		await ChatMessage.create({

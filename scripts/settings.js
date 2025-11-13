@@ -89,6 +89,22 @@ export const registerSettings = () => {
 		default: gameSystems[game.settings.get(moduleName, 'gameSystem')].prompt,
 		onChange: () => console.log(`${moduleName} | ChatGPT prompt now is:`, getGamePromptSetting()),
 	});
+
+	game.settings.register(moduleName, 'assistantId', {
+		name: 'OpenAI Assistant ID (Optional)',
+		hint: 'If set, uses your existing Assistant instead of Chat Completions API. Leave empty to use Chat API. When using an Assistant, gameSystem, modelVersion, and gamePrompt are ignored.',
+		scope: 'world',
+		config: true,
+		type: String,
+		default: '',
+		onChange: (id) => {
+			if (id) {
+				console.log(`${moduleName} | Assistant ID set: ${id}. Using Assistant API.`);
+			} else {
+				console.log(`${moduleName} | Assistant ID cleared. Using Chat Completions API.`);
+			}
+		},
+	});
 }
 
 export const getGamePromptSetting = () => {

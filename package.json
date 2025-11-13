@@ -6,7 +6,10 @@
   "author": "Nikolay Vizovitin",
   "license": "MIT",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node test.js",
+    "test:real": "node --input-type=module test-real-api.js",
+    "test:assistant": "node --input-type=module test-assistant.js"
   },
   "devDependencies": {
     "eslint": "^8.0.1",
