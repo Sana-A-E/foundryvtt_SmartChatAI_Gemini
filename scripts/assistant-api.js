@@ -1,12 +1,12 @@
 /**
- * Assistant API - Simple wrapper for existing OpenAI Assistants
- * This module connects to an existing Assistant that the user created in OpenAI
- * Does NOT create assistants automatically
+ * OpenAI Assistants API wrapper
+ * Uses existing Assistant created by user in OpenAI
+ * Includes retry logic, history management, and consistent error handling
  */
 
 import { moduleName } from './settings.js';
-
-// ==================== THREAD & MESSAGE MANAGEMENT ====================
+import { pushHistory } from './history.js';
+import { fetchWithRetry, convertToHtml, getAuthHeader, getAssistantsBetaHeader } from './api-client.js';
 
 /**
  * Create a thread for conversation
@@ -18,34 +18,19 @@ async function createThread(apiKey) {
 
 	const options = {
 		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-			'OpenAI-Beta': 'assistants=v2'
-		},
-		body: JSON.stringify({})
+		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
+		body: JSON.stringify({}),
 	};
 
-	try {
-		const response = await fetch(threadUrl, options);
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(`Failed to create thread: ${errorData.error?.message}`);
-		}
-
-		const data = await response.json();
-		return data.id;
-	} catch (error) {
-		throw new Error(`Error creating thread: ${error.message}`);
-	}
+	const data = await fetchWithRetry(threadUrl, options, 'createThread');
+	return data.id;
 }
 
 /**
- * Send a message to a thread
+ * Add message to thread
  * @param {string} apiKey - OpenAI API key
  * @param {string} threadId - Thread ID
- * @param {string} message - User message
+ * @param {string} message - Message content
  * @returns {Promise<string>} - Message ID
  */
 async function addMessageToThread(apiKey, threadId, message) {
@@ -53,34 +38,19 @@ async function addMessageToThread(apiKey, threadId, message) {
 
 	const options = {
 		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-			'OpenAI-Beta': 'assistants=v2'
-		},
+		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
 		body: JSON.stringify({
 			role: 'user',
 			content: message
-		})
+		}),
 	};
 
-	try {
-		const response = await fetch(messageUrl, options);
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(`Failed to add message: ${errorData.error?.message}`);
-		}
-
-		const data = await response.json();
-		return data.id;
-	} catch (error) {
-		throw new Error(`Error adding message: ${error.message}`);
-	}
+	const data = await fetchWithRetry(messageUrl, options, `addMessage(${threadId})`);
+	return data.id;
 }
 
 /**
- * Run the assistant on a thread
+ * Run assistant on thread
  * @param {string} apiKey - OpenAI API key
  * @param {string} threadId - Thread ID
  * @param {string} assistantId - Assistant ID
@@ -91,190 +61,159 @@ async function runAssistant(apiKey, threadId, assistantId) {
 
 	const options = {
 		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-			'OpenAI-Beta': 'assistants=v2'
-		},
+		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
 		body: JSON.stringify({
 			assistant_id: assistantId
-		})
+		}),
 	};
 
-	try {
-		const response = await fetch(runUrl, options);
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(`Failed to run assistant: ${errorData.error?.message}`);
-		}
-
-		const data = await response.json();
-		return data.id;
-	} catch (error) {
-		throw new Error(`Error running assistant: ${error.message}`);
-	}
+	const data = await fetchWithRetry(runUrl, options, `runAssistant(${assistantId})`);
+	return data.id;
 }
 
 /**
- * Wait for the assistant run to complete
+ * Wait for run to complete with polling
  * @param {string} apiKey - OpenAI API key
  * @param {string} threadId - Thread ID
  * @param {string} runId - Run ID
- * @param {number} maxAttempts - Maximum polling attempts
- * @returns {Promise<object>} - Run status
+ * @param {number} maxAttempts - Max polling attempts (≈1 attempt per second)
+ * @returns {Promise<Object>} - Final run status
+ * @throws {Error} - If timeout or run fails
  */
 async function waitForRunCompletion(apiKey, threadId, runId, maxAttempts = 30) {
 	const checkRunUrl = `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`;
 
 	const options = {
 		method: 'GET',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-			'OpenAI-Beta': 'assistants=v2'
-		}
+		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
 	};
 
-	for (let i = 0; i < maxAttempts; i++) {
+	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		try {
+			console.debug(`${moduleName} | Polling run status: attempt ${attempt + 1}/${maxAttempts}`);
+
 			const response = await fetch(checkRunUrl, options);
 
 			if (!response.ok) {
 				const errorData = await response.json();
-				throw new Error(`Failed to check run status: ${errorData.error?.message}`);
+				throw new Error(`Failed to check run status: ${errorData?.error?.message}`);
 			}
 
 			const data = await response.json();
 
 			if (data.status === 'completed') {
+				console.debug(`${moduleName} | Run completed successfully`);
 				return data;
 			}
 
 			if (data.status === 'failed' || data.status === 'cancelled') {
-				throw new Error(`Run ${data.status}: ${data.last_error?.message || 'Unknown error'}`);
+				throw new Error(
+					`Run ${data.status}: ${data.last_error?.message || 'No error details'}`
+				);
 			}
 
-			// Wait before polling again
+			// Wait before next poll
 			await new Promise(resolve => setTimeout(resolve, 1000));
 
 		} catch (error) {
-			throw new Error(`Error checking run status: ${error.message}`);
+			if (error.message.includes('Run')) throw error; // Re-throw run errors
+			console.warn(`${moduleName} | Poll attempt failed: ${error.message}`);
 		}
 	}
 
-	throw new Error('Assistant run timed out after 30 seconds');
+	throw new Error('Assistant run timed out (exceeded 30 seconds)');
 }
 
 /**
- * Get the latest message from the assistant
+ * Get latest message from thread
  * @param {string} apiKey - OpenAI API key
  * @param {string} threadId - Thread ID
- * @returns {Promise<string>} - Assistant message content
+ * @returns {Promise<string>} - Message content (text only)
+ * @throws {Error} - If no message found
  */
 async function getLatestMessage(apiKey, threadId) {
 	const messagesUrl = `https://api.openai.com/v1/threads/${threadId}/messages`;
 
 	const options = {
 		method: 'GET',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-			'OpenAI-Beta': 'assistants=v2'
-		}
+		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
 	};
 
-	try {
-		const response = await fetch(messagesUrl, options);
+	const data = await fetchWithRetry(messagesUrl, options, `getMessages(${threadId})`);
 
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(`Failed to get messages: ${errorData.error?.message}`);
-		}
-
-		const data = await response.json();
-		
-		// Find the latest assistant message
-		const assistantMessage = data.data.find(msg => msg.role === 'assistant');
-		
-		if (!assistantMessage) {
-			throw new Error('No assistant message found');
-		}
-
-		// Extract text from the message
-		const textContent = assistantMessage.content.find(content => content.type === 'text');
-		
-		if (!textContent) {
-			throw new Error('No text content in assistant message');
-		}
-
-		return textContent.text.value;
-	} catch (error) {
-		throw new Error(`Error getting messages: ${error.message}`);
+	// Find latest assistant message
+	const assistantMessage = data.data.find(msg => msg.role === 'assistant');
+	if (!assistantMessage) {
+		throw new Error('No assistant message found in thread');
 	}
+
+	// Extract text content
+	const textContent = assistantMessage.content.find(content => content.type === 'text');
+	if (!textContent) {
+		throw new Error('No text content in assistant message');
+	}
+
+	return textContent.text.value;
 }
 
-// ==================== HIGH-LEVEL API ====================
-
 /**
- * Call the Assistant API with a query
+ * Call Assistant API with full workflow
+ * Creates thread, adds message, runs assistant, waits for completion, retrieves response
  * @param {string} query - User query
- * @param {string} assistantId - The Assistant ID to use
+ * @param {string} assistantId - Assistant ID (from settings)
  * @param {string} apiKey - OpenAI API key
- * @returns {Promise<string>} - Assistant response
+ * @returns {Promise<string>} - Response text (trimmed)
+ * @throws {Error} - If any step fails
  */
 export async function callAssistantApi(query, assistantId, apiKey) {
-	if (!assistantId) {
-		throw new Error('Assistant ID is required');
-	}
+	if (!assistantId) throw new Error('Assistant ID is required');
+	if (!apiKey) throw new Error('API key is required');
 
-	if (!apiKey) {
-		throw new Error('API key is required');
-	}
-
-	console.debug(`${moduleName} | callAssistantApi(): Using Assistant ${assistantId.substring(0, 10)}...`);
+	const queryMessage = { role: 'user', content: query };
 
 	try {
-		// Step 1: Create a thread
+		console.debug(`${moduleName} | Starting Assistant workflow with ID: ${assistantId.substring(0, 10)}...`);
+
+		// 1. Create thread
 		const threadId = await createThread(apiKey);
 		console.debug(`${moduleName} | Thread created: ${threadId}`);
 
-		// Step 2: Add message to thread
+		// 2. Add message
 		await addMessageToThread(apiKey, threadId, query);
 		console.debug(`${moduleName} | Message added to thread`);
 
-		// Step 3: Run the assistant
+		// 3. Run assistant
 		const runId = await runAssistant(apiKey, threadId, assistantId);
-		console.debug(`${moduleName} | Assistant run started: ${runId}`);
+		console.debug(`${moduleName} | Run started: ${runId}`);
 
-		// Step 4: Wait for completion
+		// 4. Wait for completion
 		await waitForRunCompletion(apiKey, threadId, runId);
-		console.debug(`${moduleName} | Assistant run completed`);
+		console.debug(`${moduleName} | Run completed`);
 
-		// Step 5: Get the response
+		// 5. Get response
 		const response = await getLatestMessage(apiKey, threadId);
 		console.debug(`${moduleName} | Response received: ${response.substring(0, 50)}...`);
 
+		// 6. Save to history (just like Chat API)
+		const replyMessage = { role: 'assistant', content: response };
+		pushHistory(queryMessage, replyMessage);
+
 		return response.trim();
+
 	} catch (error) {
-		console.error(`${moduleName} | Error in callAssistantApi:`, error);
+		console.error(`${moduleName} | Assistant API error:`, error);
 		throw error;
 	}
 }
 
 /**
- * Get Assistant response as HTML
+ * Get response from Assistant API formatted as HTML
  * @param {string} query - User query
- * @param {string} assistantId - The Assistant ID to use
- * @param {string} apiKey - OpenAI API key
+ * @param {string} assistantId - Assistant ID
+ * @param {string} apiKey - API key
  * @returns {Promise<string>} - Response formatted as HTML
  */
 export async function getAssistantReplyAsHtml(query, assistantId, apiKey) {
 	const answer = await callAssistantApi(query, assistantId, apiKey);
-	
-	// Convert markdown to HTML
-	const html = /<\/?[a-z][\s\S]*>/i.test(answer) || !answer.includes('\n') ?
-		answer : answer.replace(/\n/g, '<br>');
-	
-	return html.replaceAll('```', '');
+	return convertToHtml(answer);
 }

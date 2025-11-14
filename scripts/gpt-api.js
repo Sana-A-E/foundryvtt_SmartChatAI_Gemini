@@ -1,16 +1,25 @@
 import { moduleName, getGamePromptSetting } from './settings.js';
 import { pushHistory } from './history.js';
+import { fetchWithRetry, convertToHtml, getAuthHeader } from './api-client.js';
 
-
+/**
+ * Call OpenAI Chat Completions API
+ * Includes automatic retry logic, history management, and error handling
+ * @param {string} query - User query
+ * @returns {Promise<string>} - Response text (trimmed)
+ */
 async function callGptApi(query) {
 	const apiKey = game.settings.get(moduleName, 'apiKey');
 	const model = game.settings.get(moduleName, 'modelVersion');
 	const prompt = getGamePromptSetting();
 	const apiUrl = 'https://api.openai.com/v1/chat/completions';
-	const promptMessage = {role: 'user', content: prompt};
-	const queryMessage = {role: 'user', content: query};
+
+	// Build message objects
+	const promptMessage = { role: 'user', content: prompt };
+	const queryMessage = { role: 'user', content: query };
 	const messages = pushHistory().concat(promptMessage, queryMessage);
 
+	// Build request
 	const requestBody = {
 		model,
 		messages,
@@ -19,55 +28,33 @@ async function callGptApi(query) {
 
 	const requestOptions = {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${apiKey}`,
-		},
+		headers: getAuthHeader(apiKey),
 		body: JSON.stringify(requestBody),
 	};
 
-	const is4xx = c => c >= 400 && c < 500;
-	const handleFailedQuery = async (response, msg) => {
-		let err = `${response?.status}`;
-		try {
-			const data = await response.json();
-			console.debug(`${moduleName} | callGptApi(): failure data =`, data);
-			err = `${data?.error?.message} (${err})`;
-		} catch (e) {
-			console.warn(`${moduleName} | Could not decode failed API response.`, e);
-		}
-		throw new Error(`${msg}: ${err}`);
-	};
+	try {
+		// Fetch with automatic retries
+		const data = await fetchWithRetry(apiUrl, requestOptions, 'Chat Completions API');
 
-	let response = {};
-	for (
-		let retries = 0, backoffTime = 5000;
-		retries < 5 && !response?.ok;
-		retries++, await new Promise(r => setTimeout(r, backoffTime))
-	) {
-		console.debug(`${moduleName} | callGptApi(): waiting for reply (tries: ${retries})`);
-		response = await fetch(apiUrl, requestOptions);
-		console.debug(`${moduleName} | callGptApi(): response =`, response);
-		if (response?.status && is4xx(response?.status)) {
-			await handleFailedQuery(response, "ChatGPT API failed");
-		}
-	}
-
-	if (response?.ok) {
-		const data = await response.json();
-		console.debug(`${moduleName} | callGptApi(): response data =`, data);
-
+		// Extract response
 		const replyMessage = data.choices[0].message;
+		
+		// Save to history
 		pushHistory(queryMessage, replyMessage);
+
 		return replyMessage.content.trim();
-	} else {
-		await handleFailedQuery(response, "ChatGPT API failed multiple times");
+	} catch (error) {
+		console.error(`${moduleName} | callGptApi failed:`, error);
+		throw error;
 	}
 }
 
+/**
+ * Get response from Chat API formatted as HTML
+ * @param {string} query - User query
+ * @returns {Promise<string>} - Response formatted as HTML
+ */
 export async function getGptReplyAsHtml(query) {
 	const answer = await callGptApi(query);
-	const html = /<\/?[a-z][\s\S]*>/i.test(answer) || !answer.includes('\n') ?
-		answer : answer.replace(/\n/g, "<br>");
-	return html.replaceAll("```", "");
+	return convertToHtml(answer);
 }

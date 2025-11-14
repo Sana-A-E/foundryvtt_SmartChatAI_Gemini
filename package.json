@@ -1,9 +1,9 @@
 {
-  "name": "ask-chatgpt",
+  "name": "askGPT",
   "version": "0.0.1",
   "description": "Customizable ChatGPT integration for Foundry VTT",
-  "repository": "https://github.com/vizovitin/foundryvtt-ask-chatgpt",
-  "author": "Nikolay Vizovitin",
+  "repository": "https://github.com/marccosta12/foundryvtt_askGPT",
+  "author": "Marc Costa",
   "license": "MIT",
   "scripts": {
     "lint": "eslint .",

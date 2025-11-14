@@ -68,24 +68,13 @@ function logError(title, error) {
   API Key: ${apiKey.substring(0, 20)}...
   Assistant ID: ${assistantId}
 		`);
-
-		// Test 1: Simple query
-		log('📝 Test 1: Simple Assistant Query', 'Query: "What is 2+2?"');
-		console.time('Response time');
+        // Test 3: HTML formatting
+		log('📝 Test 2: Nombre assistants');
 		
-		const response1 = await callAssistantApi('What is 2+2?', assistantId, apiKey);
+		const response2 = await getAssistantReplyAsHtml('Dime el nombre del asistente y la Source priority que usas', assistantId, apiKey);
 		
-		console.timeEnd('Response time');
-		console.log(`Response: ${response1.substring(0, 150)}...`);
-
-		// Test 2: Game-specific query
-		log('📝 Test 2: Query Test', 'Query: "Who won the World War 2?"');
-		console.time('Response time');
-		
-		const response2 = await callAssistantApi('Who won the World War 2?', assistantId, apiKey);
-		
-		console.timeEnd('Response time');
-		console.log(`Response: ${response2.substring(0, 150)}...`);
+		console.log(`Response contains HTML: ${response2.includes('<br>')}`);
+		console.log(`Response: ${response2.substring(0, 200)}...`);
 
 		// Test 3: HTML formatting
 		log('📝 Test 3: HTML Formatted Response', 'Testing getAssistantReplyAsHtml()');
