@@ -1,8 +1,9 @@
-export const moduleName = 'ask-chatgpt';
+export const moduleName = 'askGPT';
 
 export const gameSystems = (() => {
 	const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible. Stick to the rules as much as possible.";
 	const formatPrompt = "Always format each answer as HTML code without CSS, including lists and tables. Never use Markdown.";
+	//const formatPrompt = "Use clear, structured formatting: lists, bullet points, or numbered steps when explaining rules or procedures.";
 	return {
 		'generic': {
 			name: 'Generic tabletop RPG',
@@ -45,14 +46,15 @@ export const registerSettings = () => {
 
 	game.settings.register(moduleName, 'modelVersion', {
 		name: 'ChatGPT model version',
-		hint: 'Version of the ChatGPT model to use. Free accounts do not have access to GPT-4.',
+		hint: 'Version of the ChatGPT model to use.',
 		scope: 'world',
 		config: true,
 		type: String,
-		default: 'gpt-3.5-turbo',
+		default: 'gpt-4o-mini',
 		choices: {
-			'gpt-4': 'GPT-4',           // https://platform.openai.com/docs/models/gpt-4
-			'gpt-3.5-turbo': 'GPT-3.5', // https://platform.openai.com/docs/models/gpt-3-5
+			'gpt-4o': 'GPT-4 (Pro Premium)',         			// https://platform.openai.com/docs/models/GPT-4o
+			'gpt-4o-mini': 'GPT-4 Mini (Fast & Cheap)',        	// https://platform.openai.com/docs/models/GPT-4o-mini
+			'gpt-3.5-turbo': 'GPT-3.5 (Legacy)', 				// https://platform.openai.com/docs/models/gpt-3.5-turbo
 		},
 	});
 
