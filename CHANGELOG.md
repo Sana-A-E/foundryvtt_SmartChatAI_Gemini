@@ -4,6 +4,31 @@ All notable changes to the project will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.2.0] - 2025-11-19
+
+### Added
+
+- **Dual Configuration Modes** - New `Configuration Mode` setting to choose between Personal (free) and Premium (managed service)
+- **Premium Mode Foundation** - Infrastructure for future Premium managed service with pre-configured Assistants
+- **License Code Support** - New setting for Premium license validation (backend integration coming soon)
+- **Dynamic Settings UI** - Settings now show/hide automatically based on selected configuration mode
+- **Enhanced Security** - Both API keys and license codes are now password-masked in settings interface
+- **Improved Validation** - Added comprehensive checks for API key presence and configuration validity
+
+### Changed
+
+- Refactored `module.js` with unified routing logic for both Personal and Premium modes
+- Restructured `settings.js` for better organization and conditional visibility
+- Improved settings order and grouping for better user experience
+- Enhanced error messages and user notifications for configuration issues
+
+### Technical
+
+- Prepared infrastructure for future Premium backend integration
+- Maintained 100% backward compatibility with existing Personal mode workflows
+- Variables now properly scoped in routing logic to prevent conflicts
+- Added validation layer to prevent execution without proper credentials
+
 ## [0.1.0] - 2025-11-15
 
 ### Added
