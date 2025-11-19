@@ -63,19 +63,62 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
 async function respondTo(question, users) {
 	console.debug(`${moduleName} | respondTo(question = "${question}", users =`, users, ')');
 	try {
-		// Check if user configured an Assistant ID
-		const assistantId = game.settings.get(moduleName, 'assistantId');
-		const apiKey = game.settings.get(moduleName, 'apiKey');
+		const configMode = game.settings.get(moduleName, 'configMode');
 		
+		// Declare variables in upper scope
+		let apiKey;
+		let assistantId;
+
+		if (configMode === 'premium') {
+			// PREMIUM MODE
+			//const licenseCode = game.settings.get(moduleName, 'licenseCode');
+			//const gameSystem = game.settings.get(moduleName, 'gameSystem');
+			
+			// TODO: Validate license with backend when ready
+			// const premiumConfig = await validateLicense(licenseCode, gameSystem);
+			
+			// TEMPORARY: Mock response until backend is ready
+			const premiumConfig = {
+				valid: false, // Change to true when backend is ready
+				apiKey: 'YOUR_API_KEY_FROM_BACKEND',
+				assistantId: 'YOUR_ASSISTANT_ID_FROM_BACKEND'
+			};
+			
+			if (!premiumConfig.valid) {
+				ui.notifications.warn('Premium features are coming soon! Please use Personal mode for now.');
+				return;
+			}
+			
+			// Assign premium credentials from backend
+			apiKey = premiumConfig.apiKey;
+			assistantId = premiumConfig.assistantId;
+			
+		} else {
+			// PERSONAL MODE (current logic)
+			apiKey = game.settings.get(moduleName, 'apiKey');
+			assistantId = game.settings.get(moduleName, 'assistantId');
+			
+			// Validate that API key is configured
+			if (!apiKey || !apiKey.trim()) {
+				ui.notifications.error('Please configure your OpenAI API key in module settings');
+				return;
+			}
+		}
+
 		let reply;
 
+		// Unified logic for both modes
 		if (assistantId && assistantId.trim()) {
-			// Use Assistant API
+			// Use Assistant API (Personal with own Assistant ID OR Premium)
 			console.debug(`${moduleName} | Using Assistant API with ID: ${assistantId}`);
 			const { getAssistantReplyAsHtml } = await import('./assistant-api.js');
 			reply = await getAssistantReplyAsHtml(question, assistantId, apiKey);
 		} else {
-			// Use Chat Completions API (default)
+			// Use Chat API (only Personal without Assistant ID)
+			if (configMode === 'premium') {
+				ui.notifications.warn('Premium mode requires an Assistant. Please contact support.');
+				return;
+			}
 			console.debug(`${moduleName} | Using Chat Completions API`);
 			reply = await getGptReplyAsHtml(question);
 		}

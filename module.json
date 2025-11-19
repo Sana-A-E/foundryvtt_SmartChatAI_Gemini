@@ -2,7 +2,7 @@
   "id": "ask-chatgpt",
   "title": "Ask ChatGPT",
   "description": "Customizable ChatGPT integration for Foundry VTT with optional OpenAI Assistants API support",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "10",
     "verified": "10.291"
@@ -25,7 +25,7 @@
   ],
   "url": "https://github.com/marccosta12/foundryvtt_askGPT",
   "manifest": "https://raw.githubusercontent.com/marccosta12/foundryvtt_askGPT/main/module.json",
-  "download": "https://github.com/marccosta12/foundryvtt_askGPT/releases/download/v0.1.1/ask-chatgpt-0.1.1.zip",
+  "download": "https://github.com/marccosta12/foundryvtt_askGPT/releases/download/v0.2.0/ask-chatgpt-0.2.0.zip",
   "changelog": "https://github.com/marccosta12/foundryvtt_askGPT/blob/main/CHANGELOG.md",
   "license": "MIT",
   "readme": "README.md"
