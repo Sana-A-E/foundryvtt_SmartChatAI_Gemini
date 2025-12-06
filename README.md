@@ -45,11 +45,10 @@ Built-in support for D&D 5e, Pathfinder 2e and generic systems. Customize prompt
 Maintain conversation history across multiple turns. Adjust context window size to balance memory and token usage.
 
 ### Flexible Configuration
-- Choose your AI engine (Chat or Assistants)
-- Select model version (GPT-4 or GPT-3.5)
+- Select model version (GPT-4o, GPT-4o Mini, or GPT-3.5)
 - Customize system prompts for your campaign
 - Configure context length for conversation memory
-- Uses your custom OpenAI Assistant
+- Optional: Use your custom OpenAI Assistant for advanced features
 
 ## How It Works
 
@@ -61,11 +60,6 @@ Your custom prompts determine how the AI behaves—whether it acts as a knowledg
 
 ## Settings Guide
 
-### Configuration Mode
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Configuration Mode** | Choose between Personal (use your own OpenAI API) or Premium (managed service - coming soon) | Personal |
-
 ### Personal Mode Settings
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -76,22 +70,9 @@ Your custom prompts determine how the AI behaves—whether it acts as a knowledg
 | **Context Length** | Number of recent messages AI remembers (0-50). Per-user, resets on page reload | 5 |
 | **OpenAI Assistant ID** | Advanced. Uses your custom OpenAI Assistant. See [Using Assistants](#using-assistants) below | - |
 
-### Premium Mode Settings (Coming Soon)
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Premium License Code** | Enter your premium license code to unlock managed Assistants | - |
-
-> **Note:** In Premium mode, Assistant configuration is managed automatically. Personal settings (API key, model, custom prompts) are hidden.
-
 ### Using Assistants
 
 Don't have an Assistant? Create one on [OpenAI Platform](https://platform.openai.com/assistants):
-1. Upload your rulebooks, campaign notes, or custom knowledge
-2. Configure instructions for AI behavior
-3. Copy the Assistant ID
-4. Paste it in module settings under "Assistant ID"
-
-That's it! Your Assistant is now available to your party.
 
 ## Acknowledgements
 
