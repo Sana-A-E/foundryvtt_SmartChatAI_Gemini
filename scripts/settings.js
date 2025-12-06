@@ -1,9 +1,8 @@
-export const moduleName = 'askGPT';
+export const moduleName = 'Smart Chat AI';
 
 export const gameSystems = (() => {
 	const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible. Stick to the rules as much as possible.";
 	const formatPrompt = "Always format each answer as HTML code without CSS, including lists and tables. Never use Markdown.";
-	//const formatPrompt = "Use clear, structured formatting: lists, bullet points, or numbered steps when explaining rules or procedures.";
 	return {
 		'generic': {
 			name: 'Generic tabletop RPG',
@@ -23,26 +22,6 @@ export const gameSystems = (() => {
 export const registerSettings = () => {
 	// 'world' scope settings are available only to GMs
 
-	// Primary configuration mode selector
-	game.settings.register(moduleName, 'configMode', {
-		name: 'Configuration Mode',
-		hint: 'Choose how you want to use the module. Personal: use your own OpenAI API. Premium: managed service with pre-configured Assistants (coming soon).',
-		scope: 'world',
-		config: true,
-		type: String,
-		default: 'personal',
-		choices: {
-			'personal': 'Personal (Use your own API)',
-			'premium': 'Premium (Managed service - Coming Soon)'
-		},
-		onChange: () => {
-			// Force settings menu refresh to show/hide relevant options
-			if (game.settings.sheet?.rendered) {
-				game.settings.sheet.render(true);
-			}
-		}
-	});
-
 	// PERSONAL MODE SETTINGS >>>
 
 	game.settings.register(moduleName, 'apiKey', {
@@ -53,23 +32,6 @@ export const registerSettings = () => {
 		type: String,
 		default: '',
 	});
-
-	// <<< PERSONAL MODE SETTINGS
-
-	// PREMIUM MODE SETTINGS >>>
-
-	game.settings.register(moduleName, 'licenseCode', {
-		name: 'Premium License Code',
-		hint: 'Enter your premium license code to unlock managed Assistants.',
-		scope: 'world',
-		config: true,
-		type: String,
-		default: '',
-	});
-
-	// <<< PREMIUM MODE SETTINGS
-
-	// COMMON SETTINGS >>>
 
 	game.settings.register(moduleName, 'gameSystem', {
 		name: 'Game system',
@@ -84,10 +46,6 @@ export const registerSettings = () => {
 		onChange: id => console.log(`${moduleName} | Game system changed to '${id}',`,
 			'ChatGPT prompt now is:', getGamePromptSetting()),
 	});
-
-	//<<< COMMON SETTINGS
-
-	// PERSONAL MODE SETTINGS >>>
 
 	game.settings.register(moduleName, 'gamePrompt', {
 		name: 'Custom prompt',
@@ -141,35 +99,13 @@ export const registerSettings = () => {
 
 	// <<< PERSONAL MODE SETTINGS
 
-	// Hook to dynamically show/hide settings based on mode
+	// Hook to make API key a password field
 	Hooks.on('renderSettingsConfig', (_settingsConfig, element, _data) => {
-		const mode = game.settings.get(moduleName, 'configMode');
-		
 		// Make API key input a password field
 		let apiKeyInput = element.find(`input[name='${moduleName}.apiKey']`)[0];
 		if (apiKeyInput) {
 			apiKeyInput.type = 'password';
 			apiKeyInput.autocomplete = 'one-time-code';
-		}
-
-		// Make license code input a password field
-		let licenseInput = element.find(`input[name='${moduleName}.licenseCode']`)[0];
-		if (licenseInput) {
-			licenseInput.type = 'password';
-			licenseInput.autocomplete = 'one-time-code';
-		}
-		
-		// Hide settings based on mode
-		if (mode === 'premium') {
-			// Hide Personal mode settings
-			element.find(`[name="${moduleName}.apiKey"]`).closest('.form-group').hide();
-			element.find(`[name="${moduleName}.modelVersion"]`).closest('.form-group').hide();
-			element.find(`[name="${moduleName}.assistantId"]`).closest('.form-group').hide();
-			element.find(`[name="${moduleName}.gamePrompt"]`).closest('.form-group').hide();
-			element.find(`[name="${moduleName}.contextLength"]`).closest('.form-group').hide();
-		} else {
-			// Hide Premium mode settings
-			element.find(`[name="${moduleName}.licenseCode"]`).closest('.form-group').hide();
 		}
 	});
 }

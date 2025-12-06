@@ -4,6 +4,44 @@ All notable changes to the project will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.3.0] - 2025-12-06
+
+### Added
+
+- **Updated Branding** - Unified module name to "Smart Chat AI" across all files and UI elements
+- **Improved Model Descriptions** - Clearer naming for GPT models (GPT-4o, GPT-4o Mini, GPT-3.5 Turbo)
+- **Enhanced Security Documentation** - Friendlier security tip about API key visibility with practical solutions
+
+### Changed
+
+- **Simplified Configuration** - Removed Premium Mode infrastructure for cleaner, focused user experience
+- **Module ID Updated** - Changed from `foundry-smart-chat` to `SmartChatAI` for better consistency
+- **Streamlined Settings** - Removed dual-mode complexity, now single Personal Mode only
+- **Updated Module Name** - Changed internal `moduleName` from `askGPT` to `Smart Chat AI`
+- **Refined UI Text** - Chat messages now show "To: Smart Chat" instead of "To: GPT"
+- **Updated Compatibility** - Verified compatibility updated to Foundry VTT v13.351
+
+### Removed
+
+- **Premium Mode** - Removed Configuration Mode selector, License Code setting, and all Premium-related infrastructure
+- **Ironsworn Support** - Removed game system (not widely requested)
+- **Duplicate Settings** - Fixed bug where settings were registered twice
+- **Original Co-author** - Moved Nikolay Vizovitin to Special Thanks section in acknowledgements
+
+### Fixed
+
+- **Settings Hook Simplified** - Removed unnecessary Premium Mode logic from renderSettingsConfig hook
+- **API Key Validation** - Enhanced validation with `.trim()` check in both module.js and assistant-api.js
+- **Copyright Attribution** - Clarified original codebase copyright while maintaining proper attribution
+- **GitHub Actions** - Updated checkout action from v3 to v6
+
+### Technical
+
+- Cleaned up all Premium Mode remnants from codebase
+- Simplified routing logic in `module.js` by removing mode checks
+- Reduced settings.js complexity by ~50 lines
+- Improved code maintainability with single-responsibility pattern
+
 ## [0.2.0] - 2025-11-19
 
 ### Added
