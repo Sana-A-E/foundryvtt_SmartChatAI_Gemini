@@ -1,4 +1,4 @@
-export const moduleName = 'Smart Chat AI';
+export const moduleName = 'SmartChatAI';
 
 export const gameSystems = (() => {
 	const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible. Stick to the rules as much as possible.";
@@ -78,7 +78,7 @@ export const registerSettings = () => {
 		config: true,
 		type: Number,
 		default: 5,
-		range: {min: 0, max: 50},
+		range: {min: 0, max: 20},
 	});
 
 	game.settings.register(moduleName, 'assistantId', {

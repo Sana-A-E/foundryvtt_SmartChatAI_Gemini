@@ -4,6 +4,33 @@ All notable changes to the project will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.0] - 2025-12-07
+
+### Added
+
+- **Visual Progress Indicator** - Spinner icon with "Thinking..." message while waiting for Assistants API responses
+- **Thread Persistence System** - New `thread-manager.js` module that caches and reuses threads for better performance
+
+### Changed
+
+- **Adaptive Polling Optimization** - Assistants API now uses progressive delays (250ms → 3s) instead of fixed 1s intervals for 40-50% faster responses
+- **Thread Reuse** - Assistants API reuses existing threads instead of creating new ones each time, reducing overhead by ~600ms per request
+- **Improved Response Time** - Assistants API expected response time reduced from ~30s to ~15-20s for first question, ~14-19s for subsequent questions
+- **Context Length Default** - Increased default context length setting for better conversation memory
+
+### Fixed
+
+- **Spinner Cleanup** - Spinner message is properly removed after response or on error, preventing orphaned messages
+- **Thread Management** - History clear now also clears all cached threads to prevent stale thread issues
+
+### Technical
+
+- Created `scripts/thread-manager.js` with Map-based thread caching system
+- Implemented `getOrCreateThread()`, `clearThread()`, and `clearAllThreads()` functions
+- Updated `assistant-api.js` with `waitForRunCompletion()` using delays array [250ms, 250ms, 500ms, 500ms, 1s×4, 2s×3, 3s]
+- Enhanced `history.js` with `clearHistory()` function that integrates with thread management
+- Added comprehensive error handling for spinner lifecycle
+
 ## [0.3.0] - 2025-12-06
 
 ### Added

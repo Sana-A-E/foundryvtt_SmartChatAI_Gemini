@@ -7,24 +7,7 @@
 import { moduleName } from './settings.js';
 import { pushHistory } from './history.js';
 import { fetchWithRetry, convertToHtml, getAuthHeader, getAssistantsBetaHeader } from './api-client.js';
-
-/**
- * Create a thread for conversation
- * @param {string} apiKey - OpenAI API key
- * @returns {Promise<string>} - Thread ID
- */
-async function createThread(apiKey) {
-	const threadUrl = 'https://api.openai.com/v1/threads';
-
-	const options = {
-		method: 'POST',
-		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
-		body: JSON.stringify({}),
-	};
-
-	const data = await fetchWithRetry(threadUrl, options, 'createThread');
-	return data.id;
-}
+import { getOrCreateThread } from './thread-manager.js';
 
 /**
  * Add message to thread
@@ -72,25 +55,45 @@ async function runAssistant(apiKey, threadId, assistantId) {
 }
 
 /**
- * Wait for run to complete with polling
+ * Wait for run to complete with adaptive polling
+ * Uses progressive delays: fast at start, slower as time goes on
  * @param {string} apiKey - OpenAI API key
  * @param {string} threadId - Thread ID
  * @param {string} runId - Run ID
- * @param {number} maxAttempts - Max polling attempts (≈1 attempt per second)
+ * @param {number} timeoutSeconds - Maximum time to wait in seconds
  * @returns {Promise<Object>} - Final run status
  * @throws {Error} - If timeout or run fails
  */
-async function waitForRunCompletion(apiKey, threadId, runId, maxAttempts = 30) {
+async function waitForRunCompletion(apiKey, threadId, runId, timeoutSeconds = 45) {
 	const checkRunUrl = `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`;
+	const startTime = Date.now();
 
 	const options = {
 		method: 'GET',
 		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
 	};
 
-	for (let attempt = 0; attempt < maxAttempts; attempt++) {
+	// Adaptive polling delays (in milliseconds)
+	// Start fast, then gradually slow down
+	const delays = [
+		250, 250, 500, 500,      // 0-2s: check every 250-500ms (4 checks)
+		1000, 1000, 1000, 1000,  // 2-6s: check every 1s (4 checks)
+		2000, 2000, 2000,        // 6-12s: check every 2s (3 checks)
+		3000                     // 12s+: check every 3s
+	];
+
+	let attempt = 0;
+	let runCompleted = false;
+
+	while (!runCompleted) {
 		try {
-			console.debug(`${moduleName} | Polling run status: attempt ${attempt + 1}/${maxAttempts}`);
+			// Check timeout
+			const elapsed = (Date.now() - startTime) / 1000;
+			if (elapsed > timeoutSeconds) {
+				throw new Error(`Run timed out after ${timeoutSeconds}s`);
+			}
+
+			console.debug(`${moduleName} | Polling run status: attempt ${attempt + 1} (${elapsed.toFixed(1)}s elapsed)`);
 
 			const response = await fetch(checkRunUrl, options);
 
@@ -102,7 +105,8 @@ async function waitForRunCompletion(apiKey, threadId, runId, maxAttempts = 30) {
 			const data = await response.json();
 
 			if (data.status === 'completed') {
-				console.debug(`${moduleName} | Run completed successfully`);
+				console.debug(`${moduleName} | Run completed successfully in ${elapsed.toFixed(1)}s`);
+				runCompleted = true;
 				return data;
 			}
 
@@ -112,16 +116,19 @@ async function waitForRunCompletion(apiKey, threadId, runId, maxAttempts = 30) {
 				);
 			}
 
-			// Wait before next poll
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			// Adaptive delay: use predefined delays, then default to 3s
+			const delay = delays[attempt] || 3000;
+			await new Promise(resolve => setTimeout(resolve, delay));
+			attempt++;
 
 		} catch (error) {
-			if (error.message.includes('Run')) throw error; // Re-throw run errors
+			if (error.message.includes('Run') || error.message.includes('timed out')) {
+				throw error; // Re-throw run errors and timeouts
+			}
 			console.warn(`${moduleName} | Poll attempt failed: ${error.message}`);
+			attempt++;
 		}
 	}
-
-	throw new Error('Assistant run timed out (exceeded 30 seconds)');
 }
 
 /**
@@ -174,9 +181,8 @@ export async function callAssistantApi(query, assistantId, apiKey) {
 	try {
 		console.debug(`${moduleName} | Starting Assistant workflow with ID: ${assistantId.substring(0, 10)}...`);
 
-		// 1. Create thread
-		const threadId = await createThread(apiKey);
-		console.debug(`${moduleName} | Thread created: ${threadId}`);
+		// 1. Get or create thread (reuses existing thread for context persistence)
+		const threadId = await getOrCreateThread(apiKey, assistantId);
 
 		// 2. Add message
 		await addMessageToThread(apiKey, threadId, query);

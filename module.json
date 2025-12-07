@@ -2,7 +2,7 @@
   "id": "SmartChatAI",
   "title": "Smart Chat AI",
   "description": "AI chat inside Foundry for quick questions and in-game assistance.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "compatibility": {
     "minimum": "10",
     "verified": "13.351"
@@ -19,10 +19,16 @@
   "styles": [
     "styles/module.css"
   ],
-  "url": "https://github.com/marccosta12/foundryvtt_askGPT",
-  "manifest": "https://github.com/marccosta12/foundryvtt_askGPT/releases/latest/download/module.json",
-  "download": "https://github.com/marccosta12/foundryvtt_askGPT/releases/download/v0.3.0/module.zip",
-  "changelog": "https://github.com/marccosta12/foundryvtt_askGPT/blob/main/CHANGELOG.md",
+  "url": "https://github.com/marccosta12/foundryvtt_SmartChatAI",
+  "manifest": "https://github.com/marccosta12/foundryvtt_SmartChatAI/releases/latest/download/module.json",
+  "download": "https://github.com/marccosta12/foundryvtt_SmartChatAI/releases/download/v0.4.0/module.zip",
+  "changelog": "https://github.com/marccosta12/foundryvtt_SmartChatAI/blob/main/CHANGELOG.md",
   "license": "MIT",
-  "readme": "README.md"
+  "readme": "README.md",
+  "media": [
+    {
+      "type": "icon",
+      "url": "icons/icon.png"
+    }
+  ]
 }

@@ -79,17 +79,34 @@ async function respondTo(question, users) {
 		
 
 		let reply;
+		let spinnerMessageId = null;
 
 		// Unified logic for both modes
 		if (assistantId && assistantId.trim()) {
 			// Use Assistant API (Personal with own Assistant ID OR Premium)
 			console.debug(`${moduleName} | Using Assistant API with ID: ${assistantId}`);
+			
+			// Show spinner for Assistants API
+			const spinnerMessage = await ChatMessage.create({
+				user: game.user.id,
+				speaker: ChatMessage.getSpeaker({alias: 'GPT'}),
+				content: '<i class="fas fa-spinner fa-spin"></i> Thinking...',
+				whisper: users.map(u => u.id),
+			});
+			spinnerMessageId = spinnerMessage.id;
+			
 			const { getAssistantReplyAsHtml } = await import('./assistant-api.js');
 			reply = await getAssistantReplyAsHtml(question, assistantId, apiKey);
 		} else {
 			// Use Chat Completions API
 			console.debug(`${moduleName} | Using Chat Completions API`);
 			reply = await getGptReplyAsHtml(question);
+		}
+
+		// Remove spinner if it was shown
+		if (spinnerMessageId) {
+			const spinnerMsg = game.messages.get(spinnerMessageId);
+			if (spinnerMsg) await spinnerMsg.delete();
 		}
 
 		const abbr = "By ChatGPT. Statements may be false";
@@ -104,5 +121,11 @@ async function respondTo(question, users) {
 	} catch (e) {
 		console.error(`${moduleName} | Failed to provide response.`, e);
 		ui.notifications.error(e.message, {permanent: true, console: false});
+		
+		// Remove spinner if it exists
+		if (spinnerMessageId) {
+			const spinnerMsg = game.messages.get(spinnerMessageId);
+			if (spinnerMsg) await spinnerMsg.delete();
+		}
 	}
 }

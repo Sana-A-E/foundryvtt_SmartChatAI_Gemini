@@ -2,12 +2,12 @@
 
 Bring AI to your Foundry VTT table with powerful OpenAI integration. Whether you prefer simple Chat Completions or sophisticated Assistants with custom knowledge bases, this module adapts to your needs.
 
-![Foundry VTT 10](https://img.shields.io/badge/Foundry_VTT-v10-informational?style=flat-square) ![GitHub all releases downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_askGPT/total?label=downloads%40total&style=flat-square) ![GitHub latest release downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_askGPT/latest/total?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/marccosta12/foundryvtt_askGPT/ci.yml?label=ci&logo=github&style=flat-square)
+![Foundry VTT 10](https://img.shields.io/badge/Foundry_VTT-v10-informational?style=flat-square) ![GitHub all releases downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_SmartChatAI/total?label=downloads%40total&style=flat-square) ![GitHub latest release downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_SmartChatAI/latest/total?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/marccosta12/foundryvtt_SmartChatAI/ci.yml?label=ci&logo=github&style=flat-square)
 
 ## Quick Start
 
 1. **Get your API key** from [OpenAI](https://platform.openai.com/account/api-keys)
-2. **Install the module** using: `https://github.com/marccosta12/foundryvtt_askGPT/releases/latest/download/module.json`
+2. **Install the module** using: `https://github.com/marccosta12/foundryvtt_SmartChatAI/releases/latest/download/module.json`
 3. **Configure settings** with your API key and preferred AI engine
 4. **Start asking!** Use `/?` or `/w gpt` in chat
 

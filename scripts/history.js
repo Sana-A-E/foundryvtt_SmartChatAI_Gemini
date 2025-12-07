@@ -1,4 +1,5 @@
 import { moduleName } from './settings.js';
+import { clearAllThreads } from './thread-manager.js';
 
 
 let history = [];
@@ -12,4 +13,14 @@ export function pushHistory(...args) {
 	}
 
 	return history;
+}
+
+/**
+ * Clear conversation history and associated threads
+ * Useful for starting fresh conversations
+ */
+export function clearHistory() {
+	history = [];
+	clearAllThreads();
+	console.log(`${moduleName} | History and threads cleared`);
 }
