@@ -113,8 +113,8 @@ async function respondTo(question, users) {
 		await ChatMessage.create({
 			user: game.user.id,
 			speaker: ChatMessage.getSpeaker({alias: 'GPT'}),
-		content: `<abbr title="${abbr}" class="smart-chat-to fa-solid fa-microchip-ai"></abbr>
-			<span class="smart-chat-reply">${reply}</span>`,
+			content: `<abbr title="${abbr}" class="smart-chat-to fa-solid fa-microchip-ai"></abbr>
+				<span class="smart-chat-reply">${reply}</span>`,
 			whisper: users.map(u => u.id),
 			sound: CONFIG.sounds.notification,
 		});
