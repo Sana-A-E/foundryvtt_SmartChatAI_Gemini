@@ -1,6 +1,8 @@
 # Smart Chat AI
 
-Bring AI to your Foundry VTT table with powerful OpenAI integration. Whether you prefer simple Chat Completions or sophisticated Assistants with custom knowledge bases, this module adapts to your needs.
+Bring AI to your Foundry VTT table with powerful Gemini integration. Whether you prefer simple Chat Completions or sophisticated Assistants with custom knowledge bases, this module adapts to your needs.
+
+The below is the description of [the original module](https://github.com/marccosta12/foundryvtt_SmartChatAI) this was forked from (big thanks to MarcCosta12 for the creation of the Smart Chat AI!) The description has not yet been updated for use with Gemini.  
 
 ![Foundry VTT 10](https://img.shields.io/badge/Foundry_VTT-v10-informational?style=flat-square) ![GitHub all releases downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_SmartChatAI/total?label=downloads%40total&style=flat-square) ![GitHub latest release downloads](https://img.shields.io/github/downloads/marccosta12/foundryvtt_SmartChatAI/latest/total?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/marccosta12/foundryvtt_SmartChatAI/ci.yml?label=ci&logo=github&style=flat-square) [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Me-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/F1F41QE2JP)
 
