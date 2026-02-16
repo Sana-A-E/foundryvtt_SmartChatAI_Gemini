@@ -1,73 +1,54 @@
 /**
- * Thread Manager for Assistants API
- * Manages persistent threads to maintain conversation context and reduce API calls
+ * Session Manager for Gemini
+ * Repurposed from OpenAI Thread Manager. 
+ * Since Gemini REST uses client-side history, this now manages 
+ * local session IDs to help organize different chat contexts.
  */
 
 import { moduleName } from './settings.js';
-import { fetchWithRetry, getAuthHeader, getAssistantsBetaHeader } from './api-client.js';
 
-// Store active threads per assistant
-const activeThreads = new Map();
+// Store active sessions (ID -> metadata)
+const activeSessions = new Map();
 
 /**
- * Get existing thread or create a new one for an assistant
- * @param {string} apiKey - OpenAI API key
- * @param {string} assistantId - Assistant ID
- * @returns {Promise<string>} - Thread ID
+ * Get or create a session ID
+ * For Gemini, we don't need to call a 'Create Thread' API.
+ * We just generate a unique identifier for the current chat context.
+ * @returns {string} - Session ID
  */
-export async function getOrCreateThread(apiKey, assistantId) {
-	// Check if we have an active thread for this assistant
-	if (activeThreads.has(assistantId)) {
-		const threadId = activeThreads.get(assistantId);
-		console.debug(`${moduleName} | Reusing existing thread: ${threadId}`);
-		return threadId;
-	}
+export function getOrCreateSession() {
+    const defaultId = 'default-session';
+    
+    if (activeSessions.has(defaultId)) {
+        return defaultId;
+    }
 
-	// Create new thread
-	console.debug(`${moduleName} | Creating new thread for assistant: ${assistantId.substring(0, 10)}...`);
-	const threadUrl = 'https://api.openai.com/v1/threads';
+    const sessionInfo = {
+        id: defaultId,
+        created: Date.now(),
+        model: game.settings.get(moduleName, 'modelVersion')
+    };
 
-	const options = {
-		method: 'POST',
-		headers: { ...getAuthHeader(apiKey), ...getAssistantsBetaHeader() },
-		body: JSON.stringify({}),
-	};
-
-	const data = await fetchWithRetry(threadUrl, options, 'createThread');
-	const threadId = data.id;
-
-	// Store thread
-	activeThreads.set(assistantId, threadId);
-	console.debug(`${moduleName} | Thread created and cached: ${threadId}`);
-
-	return threadId;
+    activeSessions.set(defaultId, sessionInfo);
+    console.debug(`${moduleName} | New local session initialized: ${defaultId}`);
+    
+    return defaultId;
 }
 
 /**
- * Clear thread for a specific assistant
- * @param {string} assistantId - Assistant ID
+ * Clear the current session history
  */
-export function clearThread(assistantId) {
-	if (activeThreads.has(assistantId)) {
-		const threadId = activeThreads.get(assistantId);
-		activeThreads.delete(assistantId);
-		console.debug(`${moduleName} | Thread cleared for assistant: ${assistantId.substring(0, 10)}... (thread: ${threadId})`);
-	}
+export function clearSession() {
+    // In our Gemini setup, this just triggers a history reset
+    // This is handled by history.js, so we just clear our metadata here
+    activeSessions.clear();
+    console.debug(`${moduleName} | Session metadata cleared.`);
 }
 
 /**
- * Clear all threads
+ * Get active session count
+ * @returns {number}
  */
-export function clearAllThreads() {
-	const count = activeThreads.size;
-	activeThreads.clear();
-	console.debug(`${moduleName} | All threads cleared (${count} threads)`);
-}
-
-/**
- * Get active thread count
- * @returns {number} - Number of active threads
- */
-export function getActiveThreadCount() {
-	return activeThreads.size;
+export function getActiveSessionCount() {
+    return activeSessions.size;
 }
