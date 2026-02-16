@@ -1,4 +1,4 @@
-export const moduleName = 'SmartChatAI';
+export const moduleName = 'SmartChatAIGemini';
 
 export const gameSystems = (() => {
 	const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible. Stick to the rules as much as possible.";
@@ -25,8 +25,8 @@ export const registerSettings = () => {
 	// PERSONAL MODE SETTINGS >>>
 
 	game.settings.register(moduleName, 'apiKey', {
-		name: 'OpenAI API key',
-		hint: 'Required to connect with OpenAI. Generate your key at https://platform.openai.com/account/api-keys .',
+		name: 'Gemini API key',
+		hint: 'Required to connect with OpenAI. Generate your key at https://aistudio.google.com/app/apikey .',
 		scope: 'world',
 		config: true,
 		type: String,
@@ -65,9 +65,8 @@ export const registerSettings = () => {
 		type: String,
 		default: 'gpt-4o-mini',
 		choices: {
-			'gpt-4o': 'GPT-4o (Best Quality, Higher Cost)',
-			'gpt-4o-mini': 'GPT-4o Mini (Balanced - Recommended)',
-			'gpt-3.5-turbo': 'GPT-3.5 Turbo (Economy)',
+			'gemini-3-pro-preview': 'Gemini 3 Pro Preview (Best Quality, Higher Cost)',
+			'gemini-3-flash-preview': 'Gemini 3 Flash Preview (Balanced - Recommended)'
 		},
 	});
 
