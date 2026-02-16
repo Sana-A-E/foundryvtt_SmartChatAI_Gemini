@@ -1,9 +1,9 @@
 {
-  "name": "smart-chat-ai",
-  "version": "0.4.1",
-  "description": "Smart Chat AI - AI assistant for Foundry VTT with OpenAI integration and Assistants API support",
-  "repository": "https://github.com/marccosta12/foundryvtt_SmartChatAI",
-  "author": "Marc Costa",
+  "name": "smart-chat-ai-gemini",
+  "version": "0.1",
+  "description": "Smart Chat AI Gemini Version - AI assistant for Foundry VTT with Gemini integration",
+  "repository": "https://github.com/Sana-A-E/foundryvtt_SmartChatAI_Gemini",
+  "author": "Marc Costa, Sana",
   "license": "MIT",
   "scripts": {
     "lint": "eslint .",
