@@ -1,7 +1,7 @@
 {
-  "id": "SmartChatAI",
-  "title": "Smart Chat AI",
-  "description": "AI chat inside Foundry for quick questions and in-game assistance.",
+  "id": "SmartChatAIGemini",
+  "title": "Smart Chat AI - Gemini Version",
+  "description": "AI chat inside Foundry for quick questions and in-game assistance using Google Gemini.",
   "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "10",
@@ -11,6 +11,10 @@
     {
       "name": "Marc Costa",
       "url": "https://github.com/marccosta12"
+    },
+    {
+      "name": "Sana",
+      "url": "https://github.com/Sana-A-E"
     }
   ],
   "esmodules": [
@@ -22,7 +26,7 @@
   "url": "#{URL}#",
   "manifest": "#{MANIFEST}#",
   "download": "#{DOWNLOAD}#",
-  "changelog": "https://github.com/marccosta12/foundryvtt_SmartChatAI/blob/main/CHANGELOG.md",
+  "changelog": "https://github.com/Sana-A-E/foundryvtt_SmartChatAI_Gemini/blob/main/CHANGELOG.md",
   "license": "MIT",
   "readme": "README.md",
   "media": [
