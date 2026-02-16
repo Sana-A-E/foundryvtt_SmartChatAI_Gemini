@@ -1,7 +1,5 @@
 import { registerSettings, moduleName } from './settings.js';
-// We are importing from the file we converted in step 1. 
-// If you renamed it to 'gemini-api.js', update the path below.
-import { getGptReplyAsHtml } from './gpt-api.js'; 
+import { getGptReplyAsHtml } from './gemini-api.js'; 
 
 
 Hooks.once('init', () => {
