@@ -1,131 +1,131 @@
 import { registerSettings, moduleName } from './settings.js';
-import { getGptReplyAsHtml } from './gpt-api.js';
+// We are importing from the file we converted in step 1. 
+// If you renamed it to 'gemini-api.js', update the path below.
+import { getGptReplyAsHtml } from './gpt-api.js'; 
 
 
 Hooks.once('init', () => {
-	console.log(`${moduleName} | Initialization`);
-	registerSettings();
+    console.log(`${moduleName} | Initialization`);
+    registerSettings();
 });
 
 Hooks.on('chatMessage', (chatLog, message, chatData) => {
-	const echoChatMessage = async (chatData, question) => {
-		const toGptHtml = '<span class="smart-chat-to">To: Smart Chat AI</span><br>';
-		chatData.content = `${toGptHtml}${question.replace(/\n/g, "<br>")}`;
-		await ChatMessage.create(chatData);
-	};
+    // Helper to echo the user's question back to them so they see what they asked
+    const echoChatMessage = async (chatData, question) => {
+        const toHtml = '<span class="smart-chat-to">To: Gemini AI</span><br>';
+        chatData.content = `${toHtml}${question.replace(/\n/g, "<br>")}`;
+        await ChatMessage.create(chatData);
+    };
 
-	let match;
+    let match;
 
-	const reWhisper = new RegExp(/^(\/w(?:hisper)?\s)(\[(?:[^\]]+)\]|(?:[^\s]+))\s*([^]*)/, "i");
-	match = message.match(reWhisper);
-	if (match) {
-		const gpt = 'gpt';
-		const userAliases = match[2].replace(/[[\]]/g, "").split(",").map(n => n.trim());
-		const question = match[3].trim();
-		if (userAliases.some(u => u.toLowerCase() === gpt)) {
-			const users = userAliases
-				.filter(n => n.toLowerCase() !== gpt)
-				.reduce((arr, n) => arr.concat(ChatMessage.getWhisperRecipients(n)), [game.user]);
+    // 1. Handle Whispers (e.g., "/w gemini How much is a Potion of Healing?")
+    const reWhisper = new RegExp(/^(\/w(?:hisper)?\s)(\[(?:[^\]]+)\]|(?:[^\s]+))\s*([^]*)/, "i");
+    match = message.match(reWhisper);
+    
+    if (match) {
+        // We allow both 'gpt' (for muscle memory) and 'gemini'
+        const triggers = ['gpt', 'gemini'];
+        
+        const userAliases = match[2].replace(/[[\]]/g, "").split(",").map(n => n.trim());
+        const question = match[3].trim();
 
-			// same error logic as in Foundry
-			if (!users.length) throw new Error(game.i18n.localize("ERROR.NoTargetUsersForWhisper"));
-			if (users.some(u => !u.isGM && u.id != game.user.id) && !game.user.can("MESSAGE_WHISPER")) {
-				throw new Error(game.i18n.localize("ERROR.CantWhisper"));
-			}
+        // Check if any of the whispered users are our bot
+        if (userAliases.some(u => triggers.includes(u.toLowerCase()))) {
+            
+            // Filter out the bot name from the whisper targets so we don't break Foundry's whisper logic
+            const users = userAliases
+                .filter(n => !triggers.includes(n.toLowerCase()))
+                .reduce((arr, n) => arr.concat(ChatMessage.getWhisperRecipients(n)), [game.user]);
 
-			chatData.type = CONST.CHAT_MESSAGE_TYPES.WHISPER;
-			chatData.whisper = users.map(u => u.id);
-			chatData.sound = CONFIG.sounds.notification;
-			echoChatMessage(chatData, question);
+            // Standard Foundry whisper validation
+            if (!users.length) throw new Error(game.i18n.localize("ERROR.NoTargetUsersForWhisper"));
+            if (users.some(u => !u.isGM && u.id != game.user.id) && !game.user.can("MESSAGE_WHISPER")) {
+                throw new Error(game.i18n.localize("ERROR.CantWhisper"));
+            }
 
-			respondTo(question, users);
+            chatData.type = CONST.CHAT_MESSAGE_TYPES.WHISPER;
+            chatData.whisper = users.map(u => u.id);
+            chatData.sound = CONFIG.sounds.notification;
+            
+            echoChatMessage(chatData, question);
+            respondTo(question, users); // Trigger the AI response
 
-			// prevent further processing, since an unknown whisper target would trigger an error
-			return false;
-		}
-	}
+            return false; // Stop Foundry from processing this message further
+        }
+    }
 
-	const rePublic = new RegExp(/^(\/\?\s)\s*([^]*)/, "i");
-	match = message.match(rePublic);
-	if (match) {
-		const question = match[2].trim();
-		echoChatMessage(chatData, question);
+    // 2. Handle Public Questions (e.g., "/? What is the DC for climbing?")
+    const rePublic = new RegExp(/^(\/\?\s)\s*([^]*)/, "i");
+    match = message.match(rePublic);
+    if (match) {
+        const question = match[2].trim();
+        echoChatMessage(chatData, question);
+        respondTo(question, []); // Empty array means public message
+        return false;
+    }
 
-		respondTo(question, []);
-
-		// prevent further processing, since an unknown command would trigger an error
-		return false;
-	}
-
-	return true;
+    return true;
 });
 
 async function respondTo(question, users) {
-	console.debug(`${moduleName} | respondTo(question = "${question}", users =`, users, ')');
-	try {
-		// Declare variables in upper scope
-		let apiKey;
-		let assistantId;
+    console.debug(`${moduleName} | respondTo(question = "${question}")`);
+    
+    // Track the spinner message ID so we can delete it later
+    let spinnerMessageId = null;
 
-		// PERSONAL MODE (current logic)
-		apiKey = game.settings.get(moduleName, 'apiKey');
-		assistantId = game.settings.get(moduleName, 'assistantId');
-		
-		// Validate that API key is configured
-		if (!apiKey || !apiKey.trim()) {
-			ui.notifications.error('Please configure your OpenAI API key in module settings');
-			return;
-		}
-		
+    try {
+        const apiKey = game.settings.get(moduleName, 'apiKey');
+        
+        // Validate that API key is configured
+        if (!apiKey || !apiKey.trim()) {
+            ui.notifications.error('Please configure your Google Gemini API key in module settings.');
+            return;
+        }
 
-		let reply;
-		let spinnerMessageId = null;
+        // 1. Show "Thinking..." Spinner (Great UX for players)
+        const spinnerMessage = await ChatMessage.create({
+            user: game.user.id,
+            speaker: ChatMessage.getSpeaker({alias: 'Gemini'}),
+            content: '<i class="fas fa-spinner fa-spin"></i> Consulting the archives...',
+            whisper: users.map(u => u.id),
+            type: users.length ? CONST.CHAT_MESSAGE_TYPES.WHISPER : CONST.CHAT_MESSAGE_TYPES.OTHER
+        });
+        spinnerMessageId = spinnerMessage.id;
 
-		// Unified logic for both modes
-		if (assistantId && assistantId.trim()) {
-			// Use Assistant API (Personal with own Assistant ID OR Premium)
-			console.debug(`${moduleName} | Using Assistant API with ID: ${assistantId}`);
-			
-			// Show spinner for Assistants API
-			const spinnerMessage = await ChatMessage.create({
-				user: game.user.id,
-				speaker: ChatMessage.getSpeaker({alias: 'GPT'}),
-				content: '<i class="fas fa-spinner fa-spin"></i> Thinking...',
-				whisper: users.map(u => u.id),
-			});
-			spinnerMessageId = spinnerMessage.id;
-			
-			const { getAssistantReplyAsHtml } = await import('./assistant-api.js');
-			reply = await getAssistantReplyAsHtml(question, assistantId, apiKey);
-		} else {
-			// Use Chat Completions API
-			console.debug(`${moduleName} | Using Chat Completions API`);
-			reply = await getGptReplyAsHtml(question);
-		}
+        // 2. Call the API (Using our updated gemini-api.js logic)
+        // We kept the function name getGptReplyAsHtml in the import to minimize breaking changes
+        const reply = await getGptReplyAsHtml(question);
 
-		// Remove spinner if it was shown
-		if (spinnerMessageId) {
-			const spinnerMsg = game.messages.get(spinnerMessageId);
-			if (spinnerMsg) await spinnerMsg.delete();
-		}
+        // 3. Remove Spinner
+        if (spinnerMessageId) {
+            const spinnerMsg = game.messages.get(spinnerMessageId);
+            if (spinnerMsg) await spinnerMsg.delete();
+            spinnerMessageId = null; 
+        }
 
-		const abbr = "By ChatGPT. Statements may be false";
-		await ChatMessage.create({
-			user: game.user.id,
-			speaker: ChatMessage.getSpeaker({alias: 'GPT'}),
-			content: `<abbr title="${abbr}" class="smart-chat-to fa-solid fa-microchip-ai"></abbr>
-				<span class="smart-chat-reply">${reply}</span>`,
-			whisper: users.map(u => u.id),
-			sound: CONFIG.sounds.notification,
-		});
-	} catch (e) {
-		console.error(`${moduleName} | Failed to provide response.`, e);
-		ui.notifications.error(e.message, {permanent: true, console: false});
-		
-		// Remove spinner if it exists
-		if (spinnerMessageId) {
-			const spinnerMsg = game.messages.get(spinnerMessageId);
-			if (spinnerMsg) await spinnerMsg.delete();
-		}
-	}
+        // 4. Post the actual reply
+        const tooltip = "Generated by Google Gemini. Verify rules before ruling.";
+        
+        await ChatMessage.create({
+            user: game.user.id,
+            speaker: ChatMessage.getSpeaker({alias: 'Gemini'}),
+            // Updated icon to a spark/star which fits Gemini's branding better than the microchip
+            content: `<abbr title="${tooltip}" class="smart-chat-to fa-solid fa-sparkles"></abbr>
+                <span class="smart-chat-reply">${reply}</span>`,
+            whisper: users.map(u => u.id),
+            type: users.length ? CONST.CHAT_MESSAGE_TYPES.WHISPER : CONST.CHAT_MESSAGE_TYPES.OTHER,
+            sound: CONFIG.sounds.notification,
+        });
+
+    } catch (e) {
+        console.error(`${moduleName} | Failed to provide response.`, e);
+        ui.notifications.error(`Gemini Error: ${e.message}`, {permanent: true});
+        
+        // Ensure spinner is gone even if we crash
+        if (spinnerMessageId) {
+            const spinnerMsg = game.messages.get(spinnerMessageId);
+            if (spinnerMsg) await spinnerMsg.delete();
+        }
+    }
 }
