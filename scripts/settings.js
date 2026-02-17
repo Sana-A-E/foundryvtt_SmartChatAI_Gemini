@@ -92,15 +92,34 @@ export const registerSettings = () => {
         default: 5,
         range: { min: 0, max: 20 },
     });
+    // Journal Context Setting - used to set UUID of a journal whose text can be sent to AI as context. You can use it to store your campaign progress, what happened previously, notes, homebrew rules, etc.
+    game.settings.register(moduleName, 'journalContextUUID', {
+        name: 'Campaign Context Journal (UUID)',
+        hint: 'Drag and drop a Journal Entry here. Used by the /ai-m command to provide world info to Gemini.',
+        scope: 'world',
+        config: true,
+        type: String,
+        default: '',
+    });
 
+    
     // --- UI TWEAKS ---
 
-    // Hook to hide API key in the settings menu
+    
     Hooks.on('renderSettingsConfig', (_settingsConfig, element, _data) => {
+        // Hook to hide API key in the settings menu, making it a password field
         let apiKeyInput = element.find(`input[name='${moduleName}.apiKey']`)[0];
         if (apiKeyInput) {
             apiKeyInput.type = 'password';
             apiKeyInput.autocomplete = 'off';
+        }
+
+        // Turn the System Prompt input into a Textarea for easier editing of system prompt
+        let promptInput = html.find(`input[name='${moduleName}.gamePrompt']`);
+        if (promptInput.length) {
+            const currentValue = promptInput.val();
+            const textarea = $(`<textarea name="${moduleName}.gamePrompt" style="min-height: 200px; width: 100%; font-family: monospace;">${currentValue}</textarea>`);
+            promptInput.replaceWith(textarea);
         }
     });
 }
