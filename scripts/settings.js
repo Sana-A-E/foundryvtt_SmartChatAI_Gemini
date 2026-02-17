@@ -45,6 +45,8 @@ export const registerSettings = () => {
         choices: {
             'gemini-3-flash-preview': 'Gemini 3 Flash (Fast & Balanced - Recommended)',
             'gemini-3-pro-preview': 'Gemini 3 Pro (Deep Reasoning & Complexity)',
+            'gemini-2.5-flash': 'Gemini 2.5 Flash',
+            'gemini-2.5-pro': 'Gemini 2.5 Pro',
         },
     });
 
