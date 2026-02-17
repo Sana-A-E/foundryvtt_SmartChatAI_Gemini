@@ -96,44 +96,44 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
  */
 async function getJournalContext() {
     const uuid = game.settings.get(moduleName, 'journalContextUUID');
-    if (!uuid) {
-        console.warn(`${moduleName} | No Journal UUID set in settings.`);
-        return "";
-    }
+    if (!uuid) return "";
 
     try {
         const entry = await fromUuid(uuid);
         if (!entry) {
-            ui.notifications.error("Could not find the Lore Journal. Check the UUID in settings.");
+            ui.notifications.warn("Gemini: Could not find the Lore Journal. Check UUID.");
             return "";
         }
 
-        let combinedText = "";
+        let combinedHtml = "";
 
-        // Handle Journal Entry (which contains pages)
+        // Collect HTML from pages or main content
         if (entry.pages) {
-            combinedText = entry.pages
+            combinedHtml = entry.pages
                 .filter(p => p.type === "text")
                 .map(p => p.text?.content || "")
-                .join("\n\n");
-        } 
-        // Handle a direct link to a single Page
-        else if (entry.text?.content) {
-            combinedText = entry.text.content;
+                .join("\n<hr>\n");
+        } else if (entry.text?.content) {
+            combinedHtml = entry.text.content;
         }
 
-        if (!combinedText) return "";
+        if (!combinedHtml) return "";
 
-        // Convert HTML to Plain Text to save tokens and avoid rendering errors
+        // --- CLEANER: Convert HTML tags to Newlines ---
+        // 1. Replace block endings with newlines
+        let text = combinedHtml.replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
+        // 2. Replace <br> with newlines
+        text = text.replace(/<br\s*\/?>/gi, "\n");
+        // 3. Strip all other tags
         const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = combinedText;
-        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+        tempDiv.innerHTML = text;
+        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
         
-        console.log(`${moduleName} | Extracted Lore (${plainText.length} chars):`, plainText.substring(0, 100) + "...");
-        return plainText.trim();
+        // 4. Clean up excessive newlines (optional, but looks nicer)
+        return cleanText.replace(/\n\s*\n/g, "\n").trim();
 
     } catch (e) {
-        console.error(`${moduleName} | Error reading Journal Context:`, e);
+        console.error("Gemini Context Error:", e);
         return "";
     }
 }
@@ -170,9 +170,9 @@ async function respondTo(question, users, useJournal = false) {
         if (useJournal) {
             const contextText = await getJournalContext();
             if (contextText) {
-                // We wrap the context so the AI knows this is background info, not the direct question
-                finalQuery = `background_information: """${contextText}"""\n\nuser_question: ${question}`;
-                console.log(`${moduleName} | Attached ${contextText.length} chars of context.`);
+                // Use strict separators so Gemini knows what is data vs question
+                finalQuery = `--- BEGIN CAMPAIGN CONTEXT ---\n${contextText}\n--- END CAMPAIGN CONTEXT ---\n\nQuestion or Instruction: ${question}`;
+                console.log("Gemini Sending Prompt:", finalQuery); // DEBUG: Check console (F12) to see if lore is there!
             } else {
                 ui.notifications.warn("No text found in the configured Context Journal.");
             }
