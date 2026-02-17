@@ -86,5 +86,5 @@ Your custom prompts determine how the AI behaves—whether it acts as a knowledg
 **Special thanks to:**
 - [Marc Costa](https://github.com/marccosta12) - Maintainer of the GPT Version this was forked from. Added Assistants API support, refactored architecture, and ongoing development.
 - [Nikolay Vizovitin](https://github.com/vizovitin) - Built the foundation that made this project possible
-- [OpenAI](https://openai.com) - For incredible AI tools
+- [Google](https://google.com) - For incredible AI tools
 - [Foundry VTT](https://foundryvtt.com) community - For the amazing platform
