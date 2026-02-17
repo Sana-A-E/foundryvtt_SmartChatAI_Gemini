@@ -121,6 +121,9 @@ export const registerSettings = () => {
             const textarea = $(`<textarea name="${moduleName}.gamePrompt" style="min-height: 200px; width: 100%; font-family: monospace;">${currentValue}</textarea>`);
             promptInput.replaceWith(textarea);
         }
+
+        // Add a placeholder to the UUID field to make it obvious what should go there
+        html.find(`input[name='${moduleName}.journalContextUUID']`).attr("placeholder", "JournalEntry.xxxxxx");
     });
 }
 
