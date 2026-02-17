@@ -1,7 +1,7 @@
 export const moduleName = 'SmartChatAIGemini';
 
 export const gameSystems = (() => {
-    const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible. Stick to the rules as much as possible.";
+    const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible.";
     // Note: Gemini is excellent at Markdown, but we keep the HTML instruction 
     // to ensure the Foundry chat log renders it correctly.
     const formatPrompt = "Always format each answer as HTML code without CSS, including lists and tables. Never use Markdown.";
