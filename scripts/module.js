@@ -96,20 +96,44 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
  */
 async function getJournalContext() {
     const uuid = game.settings.get(moduleName, 'journalContextUUID');
-    if (!uuid) return "";
+    if (!uuid) {
+        console.warn(`${moduleName} | No Journal UUID set in settings.`);
+        return "";
+    }
 
     try {
         const entry = await fromUuid(uuid);
-        if (!entry) return "";
-
-        // Foundry V10+ Journals have 'pages'. We want to combine text from all pages.
-        if (entry.pages) {
-            return entry.pages.map(p => p.text?.content || "").join("\n\n");
+        if (!entry) {
+            ui.notifications.error("Could not find the Lore Journal. Check the UUID in settings.");
+            return "";
         }
-        // Fallback for older data structures
-        return entry.data?.content || "";
+
+        let combinedText = "";
+
+        // Handle Journal Entry (which contains pages)
+        if (entry.pages) {
+            combinedText = entry.pages
+                .filter(p => p.type === "text")
+                .map(p => p.text?.content || "")
+                .join("\n\n");
+        } 
+        // Handle a direct link to a single Page
+        else if (entry.text?.content) {
+            combinedText = entry.text.content;
+        }
+
+        if (!combinedText) return "";
+
+        // Convert HTML to Plain Text to save tokens and avoid rendering errors
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = combinedText;
+        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+        
+        console.log(`${moduleName} | Extracted Lore (${plainText.length} chars):`, plainText.substring(0, 100) + "...");
+        return plainText.trim();
+
     } catch (e) {
-        console.error(`${moduleName} | Error fetching journal context:`, e);
+        console.error(`${moduleName} | Error reading Journal Context:`, e);
         return "";
     }
 }
