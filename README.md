@@ -10,9 +10,10 @@ I tested it in Foundry VTT 12, and it works properly (despite countless modules 
 ## Quick Start
 
 1. **Get your API key** from [Google AIStudio](https://aistudio.google.com/app/apikey)
-2. **Install the module** by downloading manually into your user modules folder and call the parent folder of this module "SmartChatAIGemini". (I haven't set up releases yet so you can't download it via Foundry.)
-3. **Configure settings** with your API key and preferred AI model. You can also change system prompt and some other stuff.
-4. **Start asking!** Use `/?` or `/w gemini` in chat
+2. **Install the module:**
+You can do a git pull into your modules folder (`git clone https://github.com/Sana-A-E/foundryvtt_SmartChatAI_Gemini.git SmartChatAIGemini`) or download the repo manually into your user modules folder, however, be sure to call the parent folder of this module "SmartChatAIGemini". I haven't set up releases yet so you can't download it via Foundry module manager.
+4. **Configure settings** with your API key and preferred AI model. You can also change system prompt and some other stuff.
+5. **Start asking!** Use `/?` for a public question that all players will see. Use `/w gemini` or `/ai` to chat with gemini privately. Use `/ai-m` if you want to chat privately and send a configured Journal entry as context to Gemini (you can configure which Journal Entry to send by giving its UUID in settings. The text from all of its pages will be sent to Gemini as context.)
 
 ## Usage Examples
 
