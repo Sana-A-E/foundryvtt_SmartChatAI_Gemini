@@ -1,7 +1,7 @@
 import { moduleName, getGamePromptSetting } from './settings.js';
 import { pushHistory } from './history.js';
-import { fetchWithRetry, convertToHtml } from './api-client.js'; // Note: removed getAuthHeader as Gemini uses URL keys
-
+import { fetchWithRetry, convertToHtml } from './api-client.js'; 
+import { JournalProcessor } from './journal-processor.js';
 /**
  * Call Google Gemini API
  * Includes automatic retry logic, history management, and error handling
@@ -80,50 +80,49 @@ async function callGeminiApi(query, hasJournalMemory = false) {
 }
 
 /**
- * Fetch text from the Journal Entry configured in settings as a context source
+ * Fetch text from the Journal Entry configured in settings as a context source. It also resolves Foundry links and converts it all to Markdown to save on token spend.
  */
-async function getJournalContext() {
-    const uuid = game.settings.get(moduleName, 'journalContextUUID');
-    if (!uuid) return "";
-
-    try {
-        const entry = await fromUuid(uuid);
-        if (!entry) {
-            ui.notifications.warn("Gemini: Could not find the Lore Journal. Check UUID.");
-            return "";
-        }
-
-        let combinedHtml = "";
-
-        // Collect HTML from pages or main content
-        if (entry.pages) {
-            combinedHtml = entry.pages
-                .filter(p => p.type === "text")
-                .map(p => p.text?.content || "")
-                .join("\n<hr>\n");
-        } else if (entry.text?.content) {
-            combinedHtml = entry.text.content;
-        }
-
-        if (!combinedHtml) return "";
-
-        // --- CLEANER: Convert HTML tags to Newlines ---
-        // 1. Replace block endings with newlines
-        let text = combinedHtml.replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
-        // 2. Replace <br> with newlines
-        text = text.replace(/<br\s*\/?>/gi, "\n");
-        // 3. Strip all other tags
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
-        
-        // 4. Clean up excessive newlines (optional, but looks nicer)
-        return cleanText.replace(/\n\s*\n/g, "\n").trim();
-
-    } catch (e) {
-        console.error("Gemini Context Error:", e);
+async getJournalContext(journalNameOrId) {
+    // 1. Find the Journal Entry
+    const journal = game.journal.getName(journalNameOrId) || game.journal.get(journalNameOrId);
+    
+    if (!journal) {
+        console.warn(`Gemini Module | Journal "${journalNameOrId}" not found.`);
         return "";
     }
+
+    console.log(`Gemini Module | Processing Journal: ${journal.name}`);
+    let fullContent = "";
+
+    // 2. Iterate through Pages (Foundry v10+)
+    // journal.pages is a Collection, so we map over it
+    const pages = journal.pages.contents.sort((a, b) => a.sort - b.sort);
+
+    for (const page of pages) {
+        if (page.type === "text") {
+
+            // Step A: Strip [[brackets]] from raw text so they don't roll
+            const cleanText = JournalProcessor.preProcess(page.text.content);
+
+            // Step B: Enrich (resolves @UUID, actor stats, and [[/r]] commands)
+            // We use 'secrets: true' so the AI sees GM hidden notes.
+            const enrichedHtml = await TextEditor.enrichHTML(cleanText, {
+                async: true,
+                secrets: true, 
+                relativeTo: page 
+            });
+
+            // 4. Convert to Markdown
+            const markdown = JournalProcessor.convertHtmlToMarkdown(enrichedHtml);
+            
+            // Add Page Title as a header if valid
+            if (markdown.trim().length > 0) {
+                fullContent += `## Page: ${page.name}\n\n${markdown}\n\n---\n\n`;
+            }
+        }
+    }
+
+    return fullContent;
 }
 
 /**
