@@ -1,6 +1,6 @@
 import { registerSettings, moduleName } from './settings.js';
 import { getGptReplyAsHtml } from './gemini-api.js'; 
-
+import { clearHistory} from './history.js'; 
 
 Hooks.once('init', () => {
     console.log(`${moduleName} | Initialization`);
