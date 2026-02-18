@@ -62,8 +62,16 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
         respondTo(question, []); // Empty array means public message
         return false;
     }
-
-    // 3: /ai [question] (Shortcut for private whisper)
+    
+    // 3. /ai clear (For clearing history)
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.toLowerCase() === "/ai clear") {
+        clearHistory();
+        ui.notifications.info("Gemini conversation history has been cleared.");
+        return false; // Prevents the "/ai clear" text from being sent to chat
+    }
+    
+    // 4: /ai [question] (Shortcut for private whisper)
     const reAiShort = new RegExp(/^(\/ai\s)\s*([^]*)/, "i");
     match = message.match(reAiShort);
     if (match) {
@@ -75,7 +83,7 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
         return false; 
     }
 
-    // 4: /ai-m [question] (/ai with "Memory" Journal Context)
+    // 5: /ai-m [question] (/ai with "Memory" Journal Context)
     const reAiMem = new RegExp(/^(\/ai-m\s)\s*([^]*)/, "i");
     match = message.match(reAiMem);
     if (match) {
