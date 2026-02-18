@@ -82,47 +82,53 @@ async function callGeminiApi(query, hasJournalMemory = false) {
 /**
  * Fetch text from the Journal Entry configured in settings as a context source. It also resolves Foundry links and converts it all to Markdown to save on token spend.
  */
-async function getJournalContext(journalNameOrId) {
-    // 1. Find the Journal Entry
-    const journal = game.journal.getName(journalNameOrId) || game.journal.get(journalNameOrId);
-    
-    if (!journal) {
-        console.warn(`Gemini Module | Journal "${journalNameOrId}" not found.`);
-        return "";
-    }
-
-    console.log(`Gemini Module | Processing Journal: ${journal.name}`);
-    let fullContent = "";
-
-    // 2. Iterate through Pages (Foundry v10+)
-    // journal.pages is a Collection, so we map over it
-    const pages = journal.pages.contents.sort((a, b) => a.sort - b.sort);
-
-    for (const page of pages) {
-        if (page.type === "text") {
-
-            // Step A: Strip [[brackets]] from raw text so they don't roll
-            const cleanText = JournalProcessor.preProcess(page.text.content);
-
-            // Step B: Enrich (resolves @UUID, actor stats, and [[/r]] commands)
-            // We use 'secrets: true' so the AI sees GM hidden notes.
-            const enrichedHtml = await TextEditor.enrichHTML(cleanText, {
-                async: true,
-                secrets: true, 
-                relativeTo: page 
-            });
-
-            // 4. Convert to Markdown
-            const markdown = JournalProcessor.convertHtmlToMarkdown(enrichedHtml);
-            
-            // Add Page Title as a header if valid
-            if (markdown.trim().length > 0) {
-                fullContent += `## Page: ${page.name}\n\n${markdown}\n\n---\n\n`;
+async function getJournalContext() {
+    const uuid = game.settings.get(moduleName, 'journalContextUUID');
+    if (!uuid) return "";
+    try {
+            // 1. Find the Journal Entry
+            const journal = await fromUuid(uuid);
+            if (!journal) {
+                ui.notifications.warn("Gemini Module | Could not find the Lore Journal. Check UUID.");
+                return "";
             }
-        }
-    }
 
-    return fullContent;
+            console.log(`Gemini Module | Processing Journal: ${journal.name}`);
+            let fullContent = "";
+        
+            // 2. Iterate through Pages (Foundry v10+)
+            // journal.pages is a Collection, so we map over it
+            const pages = journal.pages.contents.sort((a, b) => a.sort - b.sort);
+        
+            for (const page of pages) {
+                if (page.type === "text") {
+        
+                    // Step A: Strip [[brackets]] from raw text so they don't roll
+                    const cleanText = JournalProcessor.preProcess(page.text.content);
+        
+                    // Step B: Enrich (resolves @UUID, actor stats, and [[/r]] commands)
+                    // We use 'secrets: true' so the AI sees GM hidden notes.
+                    const enrichedHtml = await TextEditor.enrichHTML(cleanText, {
+                        async: true,
+                        secrets: true, 
+                        relativeTo: page 
+                    });
+        
+                    // 4. Convert to Markdown
+                    const markdown = JournalProcessor.convertHtmlToMarkdown(enrichedHtml);
+                    
+                    // Add Page Title as a header if valid
+                    if (markdown.trim().length > 0) {
+                        fullContent += `## Page: ${page.name}\n\n${markdown}\n\n---\n\n`;
+                    }
+                }
+            }
+        
+            return fullContent;
+        } catch (e) {
+        console.error("Gemini Journal Context Error:", e);
+        return "";
+        }
 }
 
 /**
