@@ -13,7 +13,7 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
     // Helper to echo the user's question back to them so they see what they asked
     const echoChatMessage = async (chatData, question, label = "Gemini AI") => {
         //const toHtml = `<span class="smart-chat-to">To: ${label}</span><br>`;
-        chatData.content = `${toHtml}${question.replace(/\n/g, "<br>")}`;
+        chatData.content = `${question.replace(/\n/g, "<br>")}`;
         copy.flags = { [moduleName]: { isEcho: true } };
         await ChatMessage.create(chatData);
     };
