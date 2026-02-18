@@ -86,12 +86,12 @@ export const registerSettings = () => {
 
     game.settings.register(moduleName, 'contextLength', {
         name: 'Conversation Memory',
-        hint: 'How many previous messages the AI remembers. Higher values use more tokens.',
+        hint: 'How many previous messages the AI remembers. Higher values use more tokens. If you set it to a high value, you might want to manually start a new conversation (and clear history) via /ai clear',
         scope: 'world',
         config: true,
         type: Number,
-        default: 5,
-        range: { min: 0, max: 20 },
+        default: 10,
+        range: { min: 0, max: 100 },
     });
     // Journal Context Setting - used to set UUID of a journal whose text can be sent to AI as context. You can use it to store your campaign progress, what happened previously, notes, homebrew rules, etc.
     game.settings.register(moduleName, 'journalContextUUID', {
