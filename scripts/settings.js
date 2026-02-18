@@ -108,21 +108,6 @@ export const registerSettings = () => {
 
     
     Hooks.on('renderSettingsConfig', (_settingsConfig, element, _data) => {
-        // Hook to hide API key in the settings menu, making it a password field
-        let apiKeyInput = element.find(`input[name='${moduleName}.apiKey']`)[0];
-        if (apiKeyInput) {
-            apiKeyInput.type = 'password';
-            apiKeyInput.autocomplete = 'off';
-        }
-
-        // Turn the System Prompt input into a Textarea for easier editing of system prompt
-        let promptInput = html.find(`input[name='${moduleName}.gamePrompt']`);
-        if (promptInput.length) {
-            const currentValue = promptInput.val();
-            const textarea = $(`<textarea name="${moduleName}.gamePrompt" style="min-height: 200px; width: 100%; font-family: monospace;">${currentValue}</textarea>`);
-            promptInput.replaceWith(textarea);
-        }
-
         // Add a placeholder to the UUID field to make it obvious what should go there
         html.find(`input[name='${moduleName}.journalContextUUID']`).attr("placeholder", "JournalEntry.xxxxxx");
     });
