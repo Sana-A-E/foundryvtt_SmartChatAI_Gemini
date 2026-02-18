@@ -27,7 +27,7 @@ export function pushHistory(...args) {
  * Useful for starting fresh conversations
  */
 export function clearHistory() {
-    history = [];
+    history.length = 0;
     
     // Removed: clearAllThreads(); 
     // We just need to clear the local array.
