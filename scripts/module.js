@@ -2,7 +2,7 @@ import { registerSettings, moduleName } from './settings.js';
 import { getGptReplyAsHtml } from './gemini-api.js'; 
 import { clearHistory} from './history.js'; 
 
-const GEMINI_ICON = "modules/SmartChatAIGemini/icons/gemini-portrait.webp";
+const GEMINI_ICON = `modules/${moduleName}/icons/gemini-portrait.webp`;
 
 Hooks.once('init', () => {
     console.log(`${moduleName} | Initialization`);
@@ -12,8 +12,9 @@ Hooks.once('init', () => {
 Hooks.on('chatMessage', (chatLog, message, chatData) => {
     // Helper to echo the user's question back to them so they see what they asked
     const echoChatMessage = async (chatData, question, label = "Gemini AI") => {
-        const toHtml = `<span class="smart-chat-to">To: ${label}</span><br>`;
+        //const toHtml = `<span class="smart-chat-to">To: ${label}</span><br>`;
         chatData.content = `${toHtml}${question.replace(/\n/g, "<br>")}`;
+        copy.flags = { [moduleName]: { isEcho: true } };
         await ChatMessage.create(chatData);
     };
 
@@ -101,6 +102,34 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
     return true;
 });
 
+Hooks.on("renderChatMessage", (message, html, data) => {
+    // We check if the message has our custom 'isGemini' flag
+    const isGemini = message.getFlag(moduleName, "isGemini");
+    const isEcho = message.getFlag(moduleName, "isEcho");
+
+    if (isGemini || isEcho) {
+        // 1. Fix the Portrait to be portrait of gemini
+        // We find the avatar image and force it to our Gemini icon
+        if(isGemini) {
+            const avatar = html.find('img.message-portrait');
+            if (avatar.length) {
+                avatar.attr("src", GEMINI_ICON);
+            }
+        }
+        // 2. Fix the "To: [User]" label to say "To: Gemini"
+        // We find the whisper recipient label and change it to Gemini
+        const whisperTo = html.find('.whisper-to');
+        if (whisperTo.length) {
+            // If it's the AI's reply, it was sent "To: You", so we change it
+            // If it's your question (the echo), it was also sent "To: You"
+            const label = isGemini? game.user.name : "Gemini"; 
+            //const prefix = isEcho ? "To: " : "From: ";
+            
+            whisperTo.text(`To: ${label}`);
+        }
+    }
+});
+
 async function respondTo(question, users, useJournal = false) {
     console.debug(`${moduleName} | respondTo(question = "${question}")`);
     
@@ -122,9 +151,11 @@ async function respondTo(question, users, useJournal = false) {
         const spinnerMessage = await ChatMessage.create({
             user: game.user.id,
             speaker: ChatMessage.getSpeaker({alias: 'Gemini'}),
+            img: GEMINI_ICON,
             content: '<i class="fas fa-spinner fa-spin"></i> Consulting the archives...',
             whisper: whisperIds,
-            type: msgType
+            type: msgType,
+            flags: { [moduleName]: { isGemini: true } }
         });
         spinnerMessageId = spinnerMessage.id;
 
@@ -153,6 +184,7 @@ async function respondTo(question, users, useJournal = false) {
             whisper: whisperIds,
             type: msgType,
             sound: CONFIG.sounds.notification,
+            flags: { [moduleName]: { isGemini: true } }
         });
 
     } catch (e) {
