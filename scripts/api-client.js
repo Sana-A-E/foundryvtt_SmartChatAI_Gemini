@@ -73,22 +73,30 @@ export async function fetchWithRetry(url, options, context = 'API call') {
 }
 
 /**
- * Convert markdown response to HTML
- * Optimized for Gemini's tendency to use bold and lists
+ * Convert response to HTML
+ * Improved to handle Markdown tables/headings better and safer HTML detection
  */
 export function convertToHtml(text) {
     if (!text) return "";
     
-    // Check if it's already HTML
-    if (/<\/?[a-z][\s\S]*>/i.test(text)) return text;
+    // 1. Try to use Foundry's built-in Showdown converter for better Markdown support (Tables, etc.)
+    // If you ask Gemini to "Reply in Markdown", this will now render correctly as a table!
+    if (typeof showdown !== "undefined") {
+        const converter = new showdown.Converter();
+        converter.setOption('tables', true);
+        converter.setOption('simpleLineBreaks', true);
+        return converter.makeHtml(text);
+    }
+
+    // 2. Fallback: Manual Regex (Only if showdown is missing)
+    // Check if it's strictly HTML (starts with a tag)
+    if (/^\s*<[a-z][\s\S]*>/i.test(text)) return text;
 
     let html = text
-        // Convert bold (**text**) to <b>
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        // Convert basic markdown lists
-        .replace(/^\* (.*)/gm, '• $1')
-        // Convert newlines to <br>
-        .replace(/\n/g, '<br>');
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Bold
+        .replace(/^\* (.*)/gm, '• $1')          // Bullets
+        .replace(/###+\s?(.*)/gm, '<h3>$1</h3>') // Headings (Added support)
+        .replace(/\n/g, '<br>');                 // Newlines
 
     // Remove markdown code blocks
     return html.replaceAll('```', '');
