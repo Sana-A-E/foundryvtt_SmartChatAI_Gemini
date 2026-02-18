@@ -2,9 +2,8 @@ export const moduleName = 'SmartChatAIGemini';
 
 export const gameSystems = (() => {
     const genericPrompt = "I would like you to help me with running the game by coming up with ideas, answering questions, and improvising. Keep responses as short as possible.";
-    // Note: Gemini is excellent at Markdown, but we keep the HTML instruction 
-    // to ensure the Foundry chat log renders it correctly.
-    const formatPrompt = "Always format each answer as HTML code without CSS, including lists and tables. Never use Markdown.";
+    // While Gemini can handle both Markdown and HTML, Markdown saves tokens and thus saves money if you are using paid models.
+    const formatPrompt = "Always prettily format each answer with Markdown, including lists and tables where appropriate.";
     
     return {
         'generic': {
@@ -52,12 +51,12 @@ export const registerSettings = () => {
 
     game.settings.register(moduleName, 'maxOutputTokens', {
         name: 'Max Output Tokens',
-        hint: 'Limits the length of the AI response to prevent chat overflow. 1000 tokens is roughly 750 words.',
+        hint: 'Limits the length of the AI response to prevent chat overflow. Might not be needed with smart models, but dumber ones might start to ramble and repeat themselves, so they might need a cutoff to be specified. For reference, 1000 tokens is roughly 750 words.',
         scope: 'world',
         config: true,
         type: Number,
-        default: 1000,
-        range: { min: 100, max: 8000, step: 100 }
+        default: 4096,
+        range: { min: 128, max: 8192, step: 64 }
     });
 
     // --- PROMPT & CONTEXT ---
