@@ -91,53 +91,6 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
     return true;
 });
 
-/**
- * Fetch text from the Journal Entry configured in settings as a context source
- */
-async function getJournalContext() {
-    const uuid = game.settings.get(moduleName, 'journalContextUUID');
-    if (!uuid) return "";
-
-    try {
-        const entry = await fromUuid(uuid);
-        if (!entry) {
-            ui.notifications.warn("Gemini: Could not find the Lore Journal. Check UUID.");
-            return "";
-        }
-
-        let combinedHtml = "";
-
-        // Collect HTML from pages or main content
-        if (entry.pages) {
-            combinedHtml = entry.pages
-                .filter(p => p.type === "text")
-                .map(p => p.text?.content || "")
-                .join("\n<hr>\n");
-        } else if (entry.text?.content) {
-            combinedHtml = entry.text.content;
-        }
-
-        if (!combinedHtml) return "";
-
-        // --- CLEANER: Convert HTML tags to Newlines ---
-        // 1. Replace block endings with newlines
-        let text = combinedHtml.replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
-        // 2. Replace <br> with newlines
-        text = text.replace(/<br\s*\/?>/gi, "\n");
-        // 3. Strip all other tags
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
-        
-        // 4. Clean up excessive newlines (optional, but looks nicer)
-        return cleanText.replace(/\n\s*\n/g, "\n").trim();
-
-    } catch (e) {
-        console.error("Gemini Context Error:", e);
-        return "";
-    }
-}
-
 async function respondTo(question, users, useJournal = false) {
     console.debug(`${moduleName} | respondTo(question = "${question}")`);
     
@@ -165,22 +118,9 @@ async function respondTo(question, users, useJournal = false) {
         });
         spinnerMessageId = spinnerMessage.id;
 
-        // Handle Journal Context
-        let finalQuery = question;
-        if (useJournal) {
-            const contextText = await getJournalContext();
-            if (contextText) {
-                // Use strict separators so Gemini knows what is data vs question
-                finalQuery = `--- BEGIN CAMPAIGN CONTEXT ---\n${contextText}\n--- END CAMPAIGN CONTEXT ---\n\nQuestion or Instruction: ${question}`;
-                console.log("Gemini Sending Prompt:", finalQuery); // DEBUG: Check console (F12) to see if lore is there!
-            } else {
-                ui.notifications.warn("No text found in the configured Context Journal.");
-            }
-        }
-
         // 2. Call the API (Using our updated gemini-api.js logic)
         // We kept the function name getGptReplyAsHtml in the import to minimize breaking changes
-        const reply = await getGptReplyAsHtml(question);
+        const reply = await getGptReplyAsHtml(question, useJournal);
 
         // 3. Remove Spinner
         if (spinnerMessageId) {
