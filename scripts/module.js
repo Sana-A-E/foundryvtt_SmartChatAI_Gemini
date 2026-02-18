@@ -2,6 +2,8 @@ import { registerSettings, moduleName } from './settings.js';
 import { getGptReplyAsHtml } from './gemini-api.js'; 
 import { clearHistory} from './history.js'; 
 
+const GEMINI_ICON = "modules/SmartChatAIGemini/icons/gemini-portrait.webp";
+
 Hooks.once('init', () => {
     console.log(`${moduleName} | Initialization`);
     registerSettings();
@@ -46,7 +48,7 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
             chatData.whisper = users.map(u => u.id);
             chatData.sound = CONFIG.sounds.notification;
             
-            echoChatMessage(chatData, question);
+            echoChatMessage(chatData, question, "Gemini");
             respondTo(question, users); // Trigger the AI response
 
             return false; // Stop Foundry from processing this message further
@@ -78,19 +80,19 @@ Hooks.on('chatMessage', (chatLog, message, chatData) => {
         const question = match[2].trim();
         chatData.type = CONST.CHAT_MESSAGE_TYPES.WHISPER;
         chatData.whisper = [game.user.id];
-        echoChatMessage(chatData, question, "Gemini (Private)");
+        echoChatMessage(chatData, question, "Gemini");
         respondTo(question, [game.user]); // Respond only to the sender
         return false; 
     }
 
-    // 5: /ai-m [question] (/ai with "Memory" Journal Context)
-    const reAiMem = new RegExp(/^(\/ai-m\s)\s*([^]*)/, "i");
+    // 5: /ai+ [question] (/ai with Journal Access for Context)
+    const reAiMem = new RegExp(/^(\/ai\+\s)\s*([^]*)/, "i");
     match = message.match(reAiMem);
     if (match) {
         const question = match[2].trim();
         chatData.type = CONST.CHAT_MESSAGE_TYPES.WHISPER;
         chatData.whisper = [game.user.id];
-        echoChatMessage(chatData, question, "Gemini (Private with Journal Context)");
+        echoChatMessage(chatData, question, "Gemini with Journal Context");
         // We pass a flag 'useJournal' to our respond function
         respondTo(question, [game.user], true); 
         return false;
@@ -144,6 +146,7 @@ async function respondTo(question, users, useJournal = false) {
         await ChatMessage.create({
             user: game.user.id,
             speaker: ChatMessage.getSpeaker({alias: 'Gemini'}),
+            img: GEMINI_ICON,
             // Updated icon to a spark/star which fits Gemini's branding better than the microchip
             content: `<abbr title="${tooltip}" class="smart-chat-to fa-solid ${icon}"></abbr>
                 <span class="smart-chat-reply">${reply}</span>`,
