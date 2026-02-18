@@ -82,7 +82,7 @@ async function callGeminiApi(query, hasJournalMemory = false) {
 /**
  * Fetch text from the Journal Entry configured in settings as a context source. It also resolves Foundry links and converts it all to Markdown to save on token spend.
  */
-async getJournalContext(journalNameOrId) {
+async function getJournalContext(journalNameOrId) {
     // 1. Find the Journal Entry
     const journal = game.journal.getName(journalNameOrId) || game.journal.get(journalNameOrId);
     
